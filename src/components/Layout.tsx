@@ -14,11 +14,29 @@ export default function Layout({ children, title }: LayoutProps) {
   const { state } = useAppContext();
   const isHome = location.pathname === '/';
 
+  const handleBack = () => {
+    const path = location.pathname;
+    // /class/:classId/student/:studentId → /class/:classId
+    const studentMatch = path.match(/^\/class\/([^/]+)\/student\//);
+    if (studentMatch) {
+      navigate(`/class/${studentMatch[1]}`);
+      return;
+    }
+    // /class/:classId → / (홈으로 돌아갈 때 자동이동 방지)
+    if (path.startsWith('/class/')) {
+      localStorage.removeItem('lastClassId');
+      navigate('/');
+      return;
+    }
+    // 그 외 (/settings 등) → /
+    navigate('/');
+  };
+
   return (
     <div className={styles.app}>
       <header className={styles.header}>
         {!isHome && (
-          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <button className={styles.backBtn} onClick={handleBack}>
             &#8592;
           </button>
         )}
