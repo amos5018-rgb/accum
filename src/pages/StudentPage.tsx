@@ -6,7 +6,7 @@ import RecordItem from '../components/RecordItem';
 import Toast from '../components/Toast';
 import { useAppContext } from '../context/AppContext';
 import { sheetsApi } from '../api/sheetsApi';
-import { addToQueue, getQueueCount } from '../utils/offlineDb';
+import { addToQueue, getQueueCount, getCachedStudents } from '../utils/offlineDb';
 import { nowISO } from '../utils/dateUtils';
 import type { Student, StudentRecord } from '../types';
 import styles from '../styles/StudentPage.module.css';
@@ -23,13 +23,20 @@ export default function StudentPage() {
     if (!classId || !studentId) return;
 
     async function load() {
+      // 학생 정보: ClassPage에서 캐시한 데이터에서 즉시 조회 (네트워크 호출 제거)
       try {
-        const [students, recs] = await Promise.all([
-          sheetsApi.getStudents(classId!),
-          sheetsApi.getRecords(classId!, studentId),
-        ]);
-        const found = students.find((s) => s.studentId === studentId);
-        if (found) setStudent(found);
+        const cached = await getCachedStudents(classId!);
+        if (cached) {
+          const found = cached.find((s) => s.studentId === studentId);
+          if (found) setStudent(found);
+        }
+      } catch {
+        // 캐시 실패 무시
+      }
+
+      // 기록만 네트워크에서 조회
+      try {
+        const recs = await sheetsApi.getRecords(classId!, studentId);
         setRecords(recs);
       } catch {
         // 오프라인

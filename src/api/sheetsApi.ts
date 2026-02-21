@@ -26,6 +26,9 @@ async function apiPost<T>(action: string, payload: Record<string, unknown>): Pro
 }
 
 export const sheetsApi = {
+  getInitData: () =>
+    apiGet<{ subjects: Subject[]; classes: ClassGroup[]; tags: string[] }>('getInitData'),
+
   getSubjects: () => apiGet<Subject[]>('getSubjects'),
 
   getClasses: (subjectId?: string) =>

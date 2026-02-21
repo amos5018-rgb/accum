@@ -1,11 +1,21 @@
 import { openDB, type DBSchema } from 'idb';
-import type { Student, StudentRecord, OfflineQueueItem } from '../types';
+import type { Subject, ClassGroup, Student, StudentRecord, OfflineQueueItem } from '../types';
 
 interface AccumDB extends DBSchema {
   offlineQueue: {
     key: string;
     value: OfflineQueueItem;
     indexes: { 'by-timestamp': number };
+  };
+  cachedInitData: {
+    key: string;
+    value: {
+      id: string;
+      subjects: Subject[];
+      classes: ClassGroup[];
+      tags: string[];
+      fetchedAt: number;
+    };
   };
   cachedStudents: {
     key: string;
@@ -22,19 +32,26 @@ interface AccumDB extends DBSchema {
 }
 
 const DB_NAME = 'accum-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export async function getDb() {
   return openDB<AccumDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      const queueStore = db.createObjectStore('offlineQueue', { keyPath: 'id' });
-      queueStore.createIndex('by-timestamp', 'timestamp');
-      db.createObjectStore('cachedStudents', { keyPath: 'classId' });
-      db.createObjectStore('cachedRecords', { keyPath: 'studentId' });
-      db.createObjectStore('cachedTags', { keyPath: 'id' });
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        const queueStore = db.createObjectStore('offlineQueue', { keyPath: 'id' });
+        queueStore.createIndex('by-timestamp', 'timestamp');
+        db.createObjectStore('cachedStudents', { keyPath: 'classId' });
+        db.createObjectStore('cachedRecords', { keyPath: 'studentId' });
+        db.createObjectStore('cachedTags', { keyPath: 'id' });
+      }
+      if (oldVersion < 2) {
+        db.createObjectStore('cachedInitData', { keyPath: 'id' });
+      }
     },
   });
 }
+
+// ===== 오프라인 큐 =====
 
 export async function addToQueue(item: OfflineQueueItem) {
   const db = await getDb();
@@ -56,6 +73,22 @@ export async function getQueueCount(): Promise<number> {
   return db.count('offlineQueue');
 }
 
+// ===== 초기 데이터 캐시 (subjects + classes + tags) — TTL 없음 =====
+
+export async function cacheInitData(subjects: Subject[], classes: ClassGroup[], tags: string[]) {
+  const db = await getDb();
+  await db.put('cachedInitData', { id: 'init', subjects, classes, tags, fetchedAt: Date.now() });
+}
+
+export async function getCachedInitData(): Promise<{ subjects: Subject[]; classes: ClassGroup[]; tags: string[] } | null> {
+  const db = await getDb();
+  const cached = await db.get('cachedInitData', 'init');
+  if (!cached) return null;
+  return { subjects: cached.subjects, classes: cached.classes, tags: cached.tags };
+}
+
+// ===== 학생 캐시 — TTL 없음 (stale-while-revalidate) =====
+
 export async function cacheStudents(classId: string, students: Student[]) {
   const db = await getDb();
   await db.put('cachedStudents', { classId, students, fetchedAt: Date.now() });
@@ -65,10 +98,10 @@ export async function getCachedStudents(classId: string): Promise<Student[] | nu
   const db = await getDb();
   const cached = await db.get('cachedStudents', classId);
   if (!cached) return null;
-  const fiveMinutes = 5 * 60 * 1000;
-  if (Date.now() - cached.fetchedAt > fiveMinutes) return null;
   return cached.students;
 }
+
+// ===== 태그 캐시 — TTL 없음 =====
 
 export async function cacheTags(tags: string[]) {
   const db = await getDb();
@@ -79,7 +112,5 @@ export async function getCachedTags(): Promise<string[] | null> {
   const db = await getDb();
   const cached = await db.get('cachedTags', 'tags');
   if (!cached) return null;
-  const fiveMinutes = 5 * 60 * 1000;
-  if (Date.now() - cached.fetchedAt > fiveMinutes) return null;
   return cached.tags;
 }

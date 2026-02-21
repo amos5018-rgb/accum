@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAppContext } from '../context/AppContext';
 import { sheetsApi } from '../api/sheetsApi';
+import { getCachedInitData, cacheInitData } from '../utils/offlineDb';
 import type { ClassGroup } from '../types';
 import styles from '../styles/HomePage.module.css';
 
@@ -13,18 +14,20 @@ export default function HomePage() {
   const [filteredClasses, setFilteredClasses] = useState<ClassGroup[]>([]);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [subjects, classes, tags] = await Promise.all([
-          sheetsApi.getSubjects(),
-          sheetsApi.getClasses(),
-          sheetsApi.getTags(),
-        ]);
-        dispatch({ type: 'SET_SUBJECTS', payload: subjects });
-        dispatch({ type: 'SET_CLASSES', payload: classes });
-        dispatch({ type: 'SET_TAGS', payload: tags });
+    let navigated = false;
 
-        // 마지막 사용 학급 복원
+    function applyData(
+      subjects: typeof state.subjects,
+      classes: typeof state.classes,
+      tags: string[]
+    ) {
+      dispatch({ type: 'SET_SUBJECTS', payload: subjects });
+      dispatch({ type: 'SET_CLASSES', payload: classes });
+      dispatch({ type: 'SET_TAGS', payload: tags });
+      setLoading(false);
+
+      // 마지막 사용 학급 복원 (최초 1회만)
+      if (!navigated) {
         const lastClassId = localStorage.getItem('lastClassId');
         if (lastClassId) {
           const lastClass = classes.find((c) => c.classId === lastClassId);
@@ -34,13 +37,31 @@ export default function HomePage() {
               dispatch({ type: 'SELECT_SUBJECT', payload: subject });
               dispatch({ type: 'SELECT_CLASS', payload: lastClass });
               navigate(`/class/${lastClass.classId}`);
-              return;
+              navigated = true;
             }
           }
         }
+      }
+    }
+
+    async function load() {
+      // 1단계: 캐시에서 즉시 표시
+      try {
+        const cached = await getCachedInitData();
+        if (cached) {
+          applyData(cached.subjects, cached.classes, cached.tags);
+        }
       } catch {
-        // 오프라인이면 캐시 사용
-      } finally {
+        // 캐시 읽기 실패 무시
+      }
+
+      // 2단계: 네트워크에서 최신 데이터 갱신 (백그라운드)
+      try {
+        const { subjects, classes, tags } = await sheetsApi.getInitData();
+        applyData(subjects, classes, tags);
+        await cacheInitData(subjects, classes, tags);
+      } catch {
+        // 오프라인이면 캐시만 사용
         setLoading(false);
       }
     }

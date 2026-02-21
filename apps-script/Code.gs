@@ -8,6 +8,9 @@ function doGet(e) {
   var result;
 
   switch (action) {
+    case 'getInitData':
+      result = SheetOps.getInitData();
+      break;
     case 'getSubjects':
       result = SheetOps.getSubjects();
       break;
