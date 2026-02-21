@@ -1,0 +1,112 @@
+.form {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.tagSection {
+  margin-bottom: 12px;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tag {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  transition: all 0.15s;
+}
+
+.tag:active {
+  transform: scale(0.95);
+}
+
+.tagSelected {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.addTagBtn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--color-primary);
+  border: 1px dashed var(--color-primary);
+}
+
+.tagInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tagInput {
+  width: 80px;
+  padding: 5px 10px;
+  border: 1px solid var(--color-primary);
+  border-radius: 20px;
+  font-size: 13px;
+  outline: none;
+}
+
+.tagInputConfirm {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.textarea:focus {
+  border-color: var(--color-primary);
+}
+
+.submitBtn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s, transform 0.1s;
+}
+
+.submitBtn:active {
+  transform: scale(0.98);
+  background: var(--color-primary-dark);
+}
+
+.submitBtnDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

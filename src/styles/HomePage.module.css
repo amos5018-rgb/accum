@@ -1,0 +1,85 @@
+.container {
+  padding: 16px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.subjectGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.subjectCard {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-primary);
+  transition: transform 0.1s;
+  border: 2px solid transparent;
+}
+
+.subjectCard:active {
+  transform: scale(0.97);
+}
+
+.subjectCardSelected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.classList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.classItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  transition: transform 0.1s;
+}
+
+.classItem:active {
+  transform: scale(0.98);
+}
+
+.className {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.classArrow {
+  color: var(--color-text-secondary);
+  font-size: 18px;
+}
+
+.empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 40px 16px;
+  font-size: 15px;
+}
+
+.loading {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 40px 16px;
+}
