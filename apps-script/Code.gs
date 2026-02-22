@@ -19,7 +19,13 @@ function doGet(e) {
       result = SheetOps.getStudents(e.parameter.classId);
       break;
     case 'getRecords':
-      result = SheetOps.getRecords(e.parameter.classId, e.parameter.studentId);
+      result = SheetOps.getRecords(
+        e.parameter.classId,
+        e.parameter.studentId,
+        e.parameter.studentNumber,
+        e.parameter.className,
+        e.parameter.subjectName
+      );
       break;
     case 'getTags':
       result = SheetOps.getTags();

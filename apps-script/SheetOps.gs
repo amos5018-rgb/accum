@@ -184,14 +184,29 @@ var SheetOps = {
     return this._resolveRecordSheetName(classId, null, null);
   },
 
-  getRecords: function(classId, studentId) {
-    var sheetName = this._resolveRecordSheetName(classId, null, null);
-    var sheet = this.getSheet(sheetName);
+  getRecords: function(classId, studentId, studentNumberParam, classNameParam, subjectNameParam) {
+    // 시트 이름: 프론트엔드에서 className+subjectName 전달 시 시트 조회 생략
+    var sheetName;
+    var sheet;
+    if (classNameParam && subjectNameParam) {
+      sheetName = classNameParam + '_' + subjectNameParam;
+      sheet = this.getSheet(sheetName);
+      if (!sheet) {
+        // 프론트엔드 캐시가 stale일 수 있음 — 시트 이름 직접 해석으로 fallback
+        sheetName = this._resolveRecordSheetName(classId, null, null);
+        sheet = this.getSheet(sheetName);
+      }
+    } else {
+      sheetName = this._resolveRecordSheetName(classId, null, null);
+      sheet = this.getSheet(sheetName);
+    }
     if (!sheet) return [];
 
-    // studentId로 학생번호를 조회하여 기록 필터링
+    // studentNumber: 프론트엔드에서 전달 시 학생 시트 조회 생략
     var studentNumber = null;
-    if (studentId) {
+    if (studentNumberParam !== undefined && studentNumberParam !== null) {
+      studentNumber = Number(studentNumberParam);
+    } else if (studentId) {
       var students = this.getStudents(classId);
       var matched = students.filter(function(s) { return s.studentId === studentId; })[0];
       if (matched) studentNumber = matched.studentNumber;

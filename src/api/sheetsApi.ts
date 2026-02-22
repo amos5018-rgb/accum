@@ -45,10 +45,19 @@ export const sheetsApi = {
   getStudents: (classId: string) =>
     apiGet<Student[]>('getStudents', { classId }),
 
-  getRecords: (classId: string, studentId?: string) =>
+  getRecords: (
+    classId: string,
+    studentId?: string,
+    studentNumber?: number,
+    className?: string,
+    subjectName?: string,
+  ) =>
     apiGet<StudentRecord[]>('getRecords', {
       classId,
       ...(studentId ? { studentId } : {}),
+      ...(studentNumber !== undefined ? { studentNumber: String(studentNumber) } : {}),
+      ...(className ? { className } : {}),
+      ...(subjectName ? { subjectName } : {}),
     }),
 
   getTags: () => apiGet<string[]>('getTags'),

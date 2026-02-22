@@ -16,19 +16,24 @@ export default function StudentPage() {
   const { state, dispatch } = useAppContext();
   const [student, setStudent] = useState<Student | null>(null);
   const [records, setRecords] = useState<StudentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recordsLoading, setRecordsLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (!classId || !studentId) return;
 
     async function load() {
+      let currentStudent: Student | null = null;
+
       // 학생 정보: ClassPage에서 캐시한 데이터에서 즉시 조회 (네트워크 호출 제거)
       try {
         const cached = await getCachedStudents(classId!);
         if (cached) {
           const found = cached.find((s) => s.studentId === studentId);
-          if (found) setStudent(found);
+          if (found) {
+            currentStudent = found;
+            setStudent(found);
+          }
         }
       } catch {
         // 캐시 실패 무시
@@ -39,10 +44,22 @@ export default function StudentPage() {
         const cachedRecs = await getCachedRecords(classId!, studentId!);
         if (cachedRecs) {
           setRecords(cachedRecs);
-          setLoading(false);
+          setRecordsLoading(false);
         }
 
-        const recs = await sheetsApi.getRecords(classId!, studentId);
+        // className + subjectName을 전달하여 백엔드 시트 조회 생략
+        const classInfo = state.classes.find((c) => c.classId === classId);
+        const subjectInfo = classInfo
+          ? state.subjects.find((s) => s.subjectId === classInfo.subjectId)
+          : null;
+
+        const recs = await sheetsApi.getRecords(
+          classId!,
+          studentId,
+          currentStudent?.studentNumber,
+          classInfo?.className,
+          subjectInfo?.subjectName,
+        );
         setRecords(recs);
         await cacheRecords(classId!, studentId!, recs);
       } catch {
@@ -52,7 +69,7 @@ export default function StudentPage() {
           if (cachedRecs) setRecords(cachedRecs);
         }
       } finally {
-        setLoading(false);
+        setRecordsLoading(false);
       }
     }
     load();
@@ -120,14 +137,6 @@ export default function StudentPage() {
     ? `${student.studentName} (${String(student.studentNumber).padStart(2, '0')}번)`
     : '학생 기록';
 
-  if (loading) {
-    return (
-      <Layout title={title}>
-        <div className={styles.loading}>불러오는 중...</div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout title={title}>
       <div className={styles.container}>
@@ -146,9 +155,11 @@ export default function StudentPage() {
 
         <div className={styles.recordSection}>
           <p className={styles.sectionTitle}>
-            기록 내역 ({records.length}건)
+            기록 내역 {!recordsLoading && `(${records.length}건)`}
           </p>
-          {records.length === 0 ? (
+          {recordsLoading ? (
+            <div className={styles.loading}>기록을 불러오는 중...</div>
+          ) : records.length === 0 ? (
             <div className={styles.empty}>아직 기록이 없습니다</div>
           ) : (
             <div className={styles.recordList}>
