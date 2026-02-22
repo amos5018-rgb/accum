@@ -6,7 +6,7 @@ import RecordItem from '../components/RecordItem';
 import Toast from '../components/Toast';
 import { useAppContext } from '../context/AppContext';
 import { sheetsApi } from '../api/sheetsApi';
-import { addToQueue, getQueueCount, getCachedStudents } from '../utils/offlineDb';
+import { addToQueue, getQueueCount, getCachedStudents, getCachedRecords, cacheRecords } from '../utils/offlineDb';
 import { nowISO } from '../utils/dateUtils';
 import type { Student, StudentRecord } from '../types';
 import styles from '../styles/StudentPage.module.css';
@@ -34,12 +34,23 @@ export default function StudentPage() {
         // 캐시 실패 무시
       }
 
-      // 기록만 네트워크에서 조회
+      // 기록: 캐시 우선 → 네트워크 갱신
       try {
+        const cachedRecs = await getCachedRecords(classId!, studentId!);
+        if (cachedRecs) {
+          setRecords(cachedRecs);
+          setLoading(false);
+        }
+
         const recs = await sheetsApi.getRecords(classId!, studentId);
         setRecords(recs);
+        await cacheRecords(classId!, studentId!, recs);
       } catch {
-        // 오프라인
+        // 오프라인 — 캐시가 없으면 빈 상태 유지
+        if (records.length === 0) {
+          const cachedRecs = await getCachedRecords(classId!, studentId!);
+          if (cachedRecs) setRecords(cachedRecs);
+        }
       } finally {
         setLoading(false);
       }
@@ -77,13 +88,15 @@ export default function StudentPage() {
     try {
       const result = await sheetsApi.addRecord(record);
       // 동기화 성공 - temp를 실제 ID로 교체
-      setRecords((prev) =>
-        prev.map((r) =>
+      setRecords((prev) => {
+        const updated = prev.map((r) =>
           r.recordId === tempRecord.recordId
             ? { ...r, recordId: result.recordId, synced: true }
             : r
-        )
-      );
+        );
+        cacheRecords(classId, studentId!, updated);
+        return updated;
+      });
     } catch {
       // 오프라인 - 큐에 추가
       await addToQueue({
@@ -95,6 +108,11 @@ export default function StudentPage() {
       });
       const count = await getQueueCount();
       dispatch({ type: 'SET_PENDING_COUNT', payload: count });
+      // 오프라인 기록도 캐시에 반영
+      setRecords((prev) => {
+        cacheRecords(classId, studentId!, prev);
+        return prev;
+      });
     }
   };
 
