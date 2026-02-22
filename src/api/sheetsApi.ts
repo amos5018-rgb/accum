@@ -1,9 +1,15 @@
 import type { Subject, ClassGroup, Student, StudentRecord } from '../types';
 
-const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string;
+function getApiUrl(): string {
+  return localStorage.getItem('appsScriptUrl')
+    || (import.meta.env.VITE_APPS_SCRIPT_URL as string)
+    || '';
+}
 
 async function apiGet<T>(action: string, params?: Record<string, string>): Promise<T> {
-  const url = new URL(API_URL);
+  const apiUrl = getApiUrl();
+  if (!apiUrl) throw new Error('Apps Script URL이 설정되지 않았습니다.');
+  const url = new URL(apiUrl);
   url.searchParams.set('action', action);
   if (params) {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -15,7 +21,9 @@ async function apiGet<T>(action: string, params?: Record<string, string>): Promi
 }
 
 async function apiPost<T>(action: string, payload: Record<string, unknown>): Promise<T> {
-  const response = await fetch(API_URL, {
+  const apiUrl = getApiUrl();
+  if (!apiUrl) throw new Error('Apps Script URL이 설정되지 않았습니다.');
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     redirect: 'follow',
@@ -50,6 +58,12 @@ export const sheetsApi = {
 
   addTag: (tag: string) =>
     apiPost<{ success: boolean }>('addTag', { tag }),
+
+  addSubject: (subject: { subjectId: string; subjectName: string }) =>
+    apiPost<{ success: boolean }>('addSubject', { subject }),
+
+  addClass: (classGroup: { classId: string; subjectId: string; grade: number; className: string }) =>
+    apiPost<{ success: boolean }>('addClass', { classGroup }),
 
   addStudents: (classId: string, students: Array<{ number: number; name: string }>) =>
     apiPost<{ success: boolean }>('addStudents', { classId, students }),

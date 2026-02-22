@@ -95,6 +95,50 @@ var SheetOps = {
     return { success: true, count: students.length };
   },
 
+  // ===== 과목 추가 =====
+  addSubject: function(subject) {
+    var sheet = this.getSheet('_과목');
+    if (!sheet) {
+      var ss = this.getSS();
+      sheet = ss.insertSheet('_과목');
+      sheet.appendRow(['subject_id', 'subject_name']);
+      sheet.getRange(1, 1, 1, 2).setFontWeight('bold');
+    }
+
+    // 중복 확인
+    var existing = this.getSubjects();
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i].subjectId === subject.subjectId) {
+        return { success: false, message: '이미 존재하는 과목 ID입니다.' };
+      }
+    }
+
+    sheet.appendRow([subject.subjectId, subject.subjectName]);
+    return { success: true };
+  },
+
+  // ===== 학급 추가 =====
+  addClass: function(classGroup) {
+    var sheet = this.getSheet('_학급');
+    if (!sheet) {
+      var ss = this.getSS();
+      sheet = ss.insertSheet('_학급');
+      sheet.appendRow(['class_id', 'subject_id', 'grade', 'class_name']);
+      sheet.getRange(1, 1, 1, 4).setFontWeight('bold');
+    }
+
+    // 중복 확인
+    var existing = this.getClasses();
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i].classId === classGroup.classId) {
+        return { success: false, message: '이미 존재하는 학급 ID입니다.' };
+      }
+    }
+
+    sheet.appendRow([classGroup.classId, classGroup.subjectId, classGroup.grade, classGroup.className]);
+    return { success: true };
+  },
+
   // ===== 태그 =====
   getTags: function() {
     var sheet = this.getSheet('_태그');
@@ -145,13 +189,20 @@ var SheetOps = {
     var sheet = this.getSheet(sheetName);
     if (!sheet) return [];
 
+    // studentId로 학생번호를 조회하여 기록 필터링
+    var studentNumber = null;
+    if (studentId) {
+      var students = this.getStudents(classId);
+      var matched = students.filter(function(s) { return s.studentId === studentId; })[0];
+      if (matched) studentNumber = matched.studentNumber;
+    }
+
     var data = sheet.getDataRange().getValues();
     return data.slice(1)
       .filter(function(row) {
         if (!studentId) return true;
-        // student_id로 찾거나, 번호+이름으로 매칭
-        return String(row[1]) === String(studentId) ||
-               (row[1] + '' === studentId);
+        if (studentNumber !== null) return Number(row[1]) === Number(studentNumber);
+        return false;
       })
       .map(function(row, index) {
         return {

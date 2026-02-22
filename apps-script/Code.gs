@@ -1,8 +1,6 @@
 // Google Apps Script - 누가기록 관리 API
 // 이 파일을 구글 스프레드시트의 Apps Script 편집기에 붙여넣으세요.
 
-var SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
-
 function doGet(e) {
   var action = e.parameter.action;
   var result;
@@ -52,6 +50,12 @@ function doPost(e) {
       break;
     case 'batchSync':
       result = SheetOps.batchSync(data.records);
+      break;
+    case 'addSubject':
+      result = SheetOps.addSubject(data.subject);
+      break;
+    case 'addClass':
+      result = SheetOps.addClass(data.classGroup);
       break;
     default:
       result = { error: 'Unknown action: ' + action };

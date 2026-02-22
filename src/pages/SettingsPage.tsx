@@ -90,6 +90,11 @@ export default function SettingsPage() {
     setNewSubjectId('');
     setNewSubjectName('');
     showToast('과목이 추가되었습니다', 'success');
+    try {
+      await sheetsApi.addSubject(subject);
+    } catch {
+      // 오프라인 시 로컬에만 추가
+    }
   };
 
   const handleAddClass = async () => {
@@ -104,6 +109,11 @@ export default function SettingsPage() {
     setNewClassId('');
     setNewClassName('');
     showToast('학급이 추가되었습니다', 'success');
+    try {
+      await sheetsApi.addClass(cls);
+    } catch {
+      // 오프라인 시 로컬에만 추가
+    }
   };
 
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
